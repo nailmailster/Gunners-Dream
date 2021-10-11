@@ -19,6 +19,9 @@ public class PlayerController : MonoBehaviour
 
     Vector3 cameraDelta;
 
+    [SerializeField] GameObject sword;
+    [SerializeField] GameObject automatic;
+
     void Start()
     {
         cameraDelta = transform.position - Camera.main.transform.position;
@@ -38,21 +41,30 @@ public class PlayerController : MonoBehaviour
         horizontalInput = Input.GetAxis("Horizontal");
 
         if (Input.GetKeyDown(KeyCode.Space) && readyForAction)
-        {
-            inAction = true;
-            animator.SetTrigger("Finish");
-            StartCoroutine(WaitForFinishing());
-        }
+            FinishEnemy();
+    }
+
+    void FinishEnemy()
+    {
+        inAction = true;
+        animator.SetTrigger("Finish");
+        StartCoroutine(WaitForFinishing());
     }
 
     IEnumerator WaitForFinishing()
     {
+        automatic.SetActive(false);
+        sword.SetActive(true);
+
         while (!animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
 
         // while (AnimatorIsPlaying() && animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
         while (animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
+
+        sword.SetActive(false);
+        automatic.SetActive(true);
 
         inAction = false;
     }
