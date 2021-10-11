@@ -12,7 +12,8 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] GameObject enemy;
     float enemyDistance;
-    [SerializeField] float distanceToFinish = 5;
+    [SerializeField] float enemyDetectionDistance = 5;
+    [SerializeField] float finishDistance = 1.5f;
 
     [SerializeField] Text instructionsText;
     bool readyForAction, inAction;
@@ -32,7 +33,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         GetInput();
-        CheckDistanceToEnemy();
+        DetectEnemy();
     }
 
     void GetInput()
@@ -47,7 +48,33 @@ public class PlayerController : MonoBehaviour
     void FinishEnemy()
     {
         inAction = true;
+        StartCoroutine(SmoothRotateToEnemy());
+    }
+
+    IEnumerator SmoothRotateToEnemy()
+    {
+        Vector3 targetDirection = (enemy.transform.position - transform.position).normalized;
+        Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+        while (Quaternion.Angle(transform.rotation, targetRotation) > 0.01f)
+        {
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * 10 * Time.deltaTime);
+            yield return null;
+        }
+        StartCoroutine(SmoothRunToEnemy());
+    }
+
+    IEnumerator SmoothRunToEnemy()
+    {
+        animator.SetFloat("Speed", 1);
+        while (Vector3.Distance(transform.position, enemy.transform.position) > finishDistance)
+        {
+            var deltaMove = speed * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
+            CorrectCameraPosition();
+            yield return null;
+        }
         animator.SetTrigger("Finish");
+        animator.SetFloat("Speed", 0);
         StartCoroutine(WaitForFinishing());
     }
 
@@ -56,10 +83,11 @@ public class PlayerController : MonoBehaviour
         automatic.SetActive(false);
         sword.SetActive(true);
 
+        //  ждем когда состояние перейдет в Finishing
         while (!animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
 
-        // while (AnimatorIsPlaying() && animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
+        //  ждем когда Finishing отыграет
         while (animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
 
@@ -69,18 +97,13 @@ public class PlayerController : MonoBehaviour
         inAction = false;
     }
 
-    bool AnimatorIsPlaying()
-    {
-        return animator.GetCurrentAnimatorStateInfo(0).length > animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-    }
-
-    void CheckDistanceToEnemy()
+    void DetectEnemy()
     {
         if (enemy == null)
             return;
 
         enemyDistance = Vector3.Distance(transform.position, enemy.transform.position);
-        readyForAction = !inAction && enemyDistance <= distanceToFinish;
+        readyForAction = !inAction && enemyDistance <= enemyDetectionDistance;
     }
 
     private void OnGUI()
@@ -90,16 +113,25 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
+        if (!inAction)
         {
-            animator.SetFloat("Speed", verticalInput);
-
-            transform.Rotate(Vector3.up, horizontalInput * rotationSpeed * Time.fixedDeltaTime);
-
-            Vector3 moveVector = new Vector3(0, 0, verticalInput);
-            transform.Translate(moveVector * speed * Time.fixedDeltaTime, Space.Self);
-
-            Camera.main.transform.position = transform.position - cameraDelta;
+            WASDPlayer();
+            CorrectCameraPosition();
         }
+    }
+
+    void WASDPlayer()
+    {
+        animator.SetFloat("Speed", verticalInput);
+
+        transform.Rotate(Vector3.up, horizontalInput * rotationSpeed * Time.fixedDeltaTime);
+
+        Vector3 moveVector = new Vector3(0, 0, verticalInput);
+        transform.Translate(moveVector * speed * Time.fixedDeltaTime, Space.Self);
+    }
+
+    void CorrectCameraPosition()
+    {
+        Camera.main.transform.position = transform.position - cameraDelta;
     }
 }
