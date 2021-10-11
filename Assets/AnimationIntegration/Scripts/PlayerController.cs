@@ -65,13 +65,36 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator SmoothRunToEnemy()
     {
-        animator.SetFloat("Speed", 1);
-        while (Vector3.Distance(transform.position, enemy.transform.position) > finishDistance)
+        // animator.SetFloat("Speed", 1);
+        // while (Vector3.Distance(transform.position, enemy.transform.position) > finishDistance)
+        // {
+        //     var deltaMove = speed * Time.deltaTime;
+        //     transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
+        //     CorrectCameraPosition();
+        //     yield return null;
+        // }
+        // float enemyDistance = Vector3.Distance(transform.position, enemy.transform.position);
+        if (enemyDistance > finishDistance)
         {
-            var deltaMove = speed * Time.deltaTime;
-            transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
-            CorrectCameraPosition();
-            yield return null;
+            animator.SetFloat("Speed", 1);
+            while (enemyDistance > finishDistance)
+            {
+                var deltaMove = speed * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
+                CorrectCameraPosition();
+                yield return null;
+            }
+        }
+        else if (enemyDistance < finishDistance)
+        {
+            animator.SetFloat("Speed", -1);
+            while (enemyDistance < finishDistance)
+            {
+                var deltaMove = -speed * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
+                CorrectCameraPosition();
+                yield return null;
+            }
         }
         animator.SetTrigger("Finish");
         animator.SetFloat("Speed", 0);
