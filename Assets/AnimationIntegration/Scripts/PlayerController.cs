@@ -11,6 +11,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float rotationSpeed = 90;
 
     [SerializeField] GameObject enemy;
+    [SerializeField] GameObject enemyModel;
+    [SerializeField] GameObject enemyPrefab;
     float enemyDistance;
     [SerializeField] float enemyDetectionDistance = 5;
     [SerializeField] float finishDistance = 1.5f;
@@ -96,6 +98,7 @@ public class PlayerController : MonoBehaviour
         animator.SetTrigger("Finish");
         animator.SetFloat("Speed", 0);
         StartCoroutine(WaitForFinishing());
+        StartCoroutine(RespawnEnemy());
     }
 
     IEnumerator WaitForFinishing()
@@ -107,16 +110,29 @@ public class PlayerController : MonoBehaviour
         while (!animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
 
+        //  противник превратится в ragdoll в момент, когда игрок начнет вынимать из него меч
+        yield return new WaitForSeconds(.57f);
+        enemyAnimator.enabled = false;
+
         //  ждем когда Finishing отыграет
         while (animator.GetCurrentAnimatorStateInfo(0).IsName("Finishing"))
             yield return null;
 
         sword.SetActive(false);
         automatic.SetActive(true);
+    }
 
+    IEnumerator RespawnEnemy()
+    {
         inAction = false;
 
-        enemyAnimator.enabled = false;
+        yield return new WaitForSeconds(5);
+
+        //  вариант деактивации/активации объекта
+        enemy.SetActive(false);
+        enemy.transform.position = new Vector3(Random.Range(-45, 45), 0, Random.Range(-45, 45));
+        enemyAnimator.enabled = true;
+        enemy.SetActive(true);
     }
 
     void DetectEnemy()
@@ -125,12 +141,12 @@ public class PlayerController : MonoBehaviour
             return;
 
         enemyDistance = Vector3.Distance(transform.position, enemy.transform.position);
-        readyForAction = !inAction && enemyDistance <= enemyDetectionDistance;
+        readyForAction = !inAction && enemyDistance <= enemyDetectionDistance && enemyAnimator.enabled;
     }
 
     private void OnGUI()
     {
-        instructionsText.gameObject.SetActive(readyForAction);
+        instructionsText.gameObject.SetActive(readyForAction && animator.isActiveAndEnabled);
     }
 
     private void FixedUpdate()
@@ -160,18 +176,14 @@ public class PlayerController : MonoBehaviour
                 if (dot < 0)
                     angle = 360 - angle;
             }
-            // else
-            //     angle = 0;
         }
-        // else
-        //     angle = 0;
 
         if (angle > 90 && angle <= 180)
             angle = 90;
         else if (angle > 180 && angle < 270)
             angle = 270;
 
-        Debug.Log(angle);
+        // Debug.Log(angle);
     }
 
     private void LateUpdate()
@@ -197,5 +209,26 @@ public class PlayerController : MonoBehaviour
     void CorrectCameraPosition()
     {
         Camera.main.transform.position = transform.position - cameraDelta;
+    }
+
+    public void DeactivateRagdoll()
+    {
+        GameObject enemyModel = GameObject.Find("CC_Gunner_Model (1)");
+        // gameObject.GetComponent<BasicController>().enabled = true;
+        enemyModel.GetComponent<Animator>().enabled = true;
+        foreach(Rigidbody bone in enemyModel.GetComponentsInChildren<Rigidbody>())
+        {
+            bone.isKinematic = true;
+            bone.detectCollisions = false;
+        }
+        foreach (CharacterJoint joint in enemyModel.GetComponentsInChildren<CharacterJoint>())
+        {
+            joint.enableProjection = true;
+        }
+        foreach(Collider col in enemyModel.GetComponentsInChildren<Collider>())
+        {
+            col.enabled = false;
+        }
+        enemyModel.GetComponent<CharacterController>().enabled = true;
     }
 }
