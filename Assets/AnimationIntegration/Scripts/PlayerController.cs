@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,7 +11,6 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] GameObject enemy;
     [SerializeField] GameObject enemyModel;
-    [SerializeField] GameObject enemyPrefab;
     float enemyDistance;
     [SerializeField] float enemyDetectionDistance = 5;
     [SerializeField] float finishDistance = 1.5f;
@@ -28,7 +26,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Animator enemyAnimator;
 
     float angle;
-    // Transform p;
     public Transform targetBone;
 
     void Start()
@@ -78,7 +75,7 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat("Speed", 1);
             while (enemyDistance > finishDistance)
             {
-                var deltaMove = speed * Time.deltaTime;
+                float deltaMove = speed * Time.deltaTime;
                 transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
                 CorrectCameraPosition();
                 yield return null;
@@ -89,12 +86,13 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat("Speed", -1);
             while (enemyDistance < finishDistance)
             {
-                var deltaMove = -speed * Time.deltaTime;
+                float deltaMove = -speed * Time.deltaTime;
                 transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
                 CorrectCameraPosition();
                 yield return null;
             }
         }
+
         animator.SetTrigger("Finish");
         animator.SetFloat("Speed", 0);
         StartCoroutine(WaitForFinishing());
@@ -128,7 +126,6 @@ public class PlayerController : MonoBehaviour
 
         yield return new WaitForSeconds(5);
 
-        //  вариант деактивации/активации объекта
         enemy.SetActive(false);
         enemy.transform.position = new Vector3(Random.Range(-45, 45), 0, Random.Range(-45, 45));
         enemyAnimator.enabled = true;
@@ -178,6 +175,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        //  ограничиваю угол поворота корпуса до 90 градусов влево и вправо
         if (angle > 90 && angle <= 180)
             angle = 90;
         else if (angle > 180 && angle < 270)
@@ -209,26 +207,5 @@ public class PlayerController : MonoBehaviour
     void CorrectCameraPosition()
     {
         Camera.main.transform.position = transform.position - cameraDelta;
-    }
-
-    public void DeactivateRagdoll()
-    {
-        GameObject enemyModel = GameObject.Find("CC_Gunner_Model (1)");
-        // gameObject.GetComponent<BasicController>().enabled = true;
-        enemyModel.GetComponent<Animator>().enabled = true;
-        foreach(Rigidbody bone in enemyModel.GetComponentsInChildren<Rigidbody>())
-        {
-            bone.isKinematic = true;
-            bone.detectCollisions = false;
-        }
-        foreach (CharacterJoint joint in enemyModel.GetComponentsInChildren<CharacterJoint>())
-        {
-            joint.enableProjection = true;
-        }
-        foreach(Collider col in enemyModel.GetComponentsInChildren<Collider>())
-        {
-            col.enabled = false;
-        }
-        enemyModel.GetComponent<CharacterController>().enabled = true;
     }
 }
