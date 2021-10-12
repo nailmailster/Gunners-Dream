@@ -23,6 +23,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject sword;
     [SerializeField] GameObject automatic;
 
+    float angle;
+    // Transform p;
+    public Transform targetBone;
+
     void Start()
     {
         cameraDelta = transform.position - Camera.main.transform.position;
@@ -65,15 +69,6 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator SmoothRunToEnemy()
     {
-        // animator.SetFloat("Speed", 1);
-        // while (Vector3.Distance(transform.position, enemy.transform.position) > finishDistance)
-        // {
-        //     var deltaMove = speed * Time.deltaTime;
-        //     transform.position = Vector3.MoveTowards(transform.position, enemy.transform.position, deltaMove);
-        //     CorrectCameraPosition();
-        //     yield return null;
-        // }
-        // float enemyDistance = Vector3.Distance(transform.position, enemy.transform.position);
         if (enemyDistance > finishDistance)
         {
             animator.SetFloat("Speed", 1);
@@ -141,6 +136,48 @@ public class PlayerController : MonoBehaviour
             WASDPlayer();
             CorrectCameraPosition();
         }
+        CalculateCursorAngle();
+    }
+
+    void CalculateCursorAngle()
+    {
+        angle = 0;
+
+        if (!inAction)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            bool raycast = Physics.Raycast(ray, out RaycastHit raycastHit);
+
+            if (raycast)
+            {
+                Vector3 cursorDirection = raycastHit.point - transform.position;
+                angle = Vector3.Angle(transform.forward, cursorDirection);
+                var dot = Vector3.Dot(cursorDirection, transform.right);
+                if (dot < 0)
+                    angle = 360 - angle;
+            }
+            // else
+            //     angle = 0;
+        }
+        // else
+        //     angle = 0;
+
+        if (angle > 90 && angle <= 180)
+            angle = 90;
+        else if (angle > 180 && angle < 270)
+            angle = 270;
+
+        Debug.Log(angle);
+    }
+
+    private void LateUpdate()
+    {
+        RotateToCursor();
+    }
+
+    void RotateToCursor()
+    {
+        targetBone.RotateAround(targetBone.position, Vector3.up, angle);
     }
 
     void WASDPlayer()
