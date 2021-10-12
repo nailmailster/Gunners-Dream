@@ -23,6 +23,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject sword;
     [SerializeField] GameObject automatic;
 
+    [SerializeField] Animator enemyAnimator;
+
     float angle;
     // Transform p;
     public Transform targetBone;
@@ -113,6 +115,8 @@ public class PlayerController : MonoBehaviour
         automatic.SetActive(true);
 
         inAction = false;
+
+        enemyAnimator.enabled = false;
     }
 
     void DetectEnemy()
